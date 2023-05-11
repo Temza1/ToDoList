@@ -3,6 +3,7 @@ package com.moinonemoi.todolist;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.lifecycle.Observer;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -10,14 +11,18 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
@@ -26,73 +31,82 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton buttonAddNote;
     private NotesAdapter notesAdapter;
 
-    private NoteDataBase noteDataBase;
+    private MainViewModel mainViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        noteDataBase = NoteDataBase.getInstance(getApplication());
-        initViews();
+        try {
+            initViews();
 
-        notesAdapter = new NotesAdapter();
-        notesAdapter.setOnNoteClickListener(new NotesAdapter.OnNoteClickListener() {
-            @Override
-            public void onNoteClick(Note note) {
-            }
-        });
-        recyclerViewNotes.setAdapter(notesAdapter);
+            notesAdapter = new NotesAdapter();
+            notesAdapter.setOnNoteClickListener(new NotesAdapter.OnNoteClickListener() {
+                @Override
+                public void onNoteClick(Note note) {
+                    mainViewModel.showCount();
+                    int count = mainViewModel.getCount();
+                    Toast.makeText(
+                            MainActivity.this,
+                            String.valueOf(count),
+                            Toast.LENGTH_SHORT
 
-        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(
-                new ItemTouchHelper.SimpleCallback(
-                        0,
-                        ItemTouchHelper.RIGHT | ItemTouchHelper.LEFT
-                ) {
-                    @Override
-                    public boolean onMove(
-                            @NonNull RecyclerView recyclerView,
-                            @NonNull RecyclerView.ViewHolder viewHolder,
-                            @NonNull RecyclerView.ViewHolder target) {
-                        return false;
-                    }
+                    ).show();
+                }
+            });
+            recyclerViewNotes.setAdapter(notesAdapter);
+            mainViewModel.getNotes().observe(this, new Observer<List<Note>>() {
+                @Override
+                public void onChanged(List<Note> notes) {
+                    notesAdapter.setNotes(notes);
+                }
+            });
 
-                    @Override
-                    public void onSwiped(
-                            @NonNull RecyclerView.ViewHolder viewHolder,
-                            int direction
+            ItemTouchHelper itemTouchHelper = new ItemTouchHelper(
+                    new ItemTouchHelper.SimpleCallback(
+                            0,
+                            ItemTouchHelper.RIGHT | ItemTouchHelper.LEFT
                     ) {
-                        int position = viewHolder.getAdapterPosition();
-                        Note note = notesAdapter.getNotes().get(position);
-                        noteDataBase.notesDao().remove(note.getId());
-                        showNotes();
-                    }
-                });
+                        @Override
+                        public boolean onMove(
+                                @NonNull RecyclerView recyclerView,
+                                @NonNull RecyclerView.ViewHolder viewHolder,
+                                @NonNull RecyclerView.ViewHolder target) {
+                            return false;
+                        }
 
-        itemTouchHelper.attachToRecyclerView(recyclerViewNotes);
+                        @Override
+                        public void onSwiped(
+                                @NonNull RecyclerView.ViewHolder viewHolder,
+                                int direction
+                        ) {
+                            int position = viewHolder.getAdapterPosition();
+                            Note note = notesAdapter.getNotes().get(position);
+                            mainViewModel.remove(note);
+                        }
+                    });
 
-        buttonAddNote.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = AddNoteActivity.newIntent(MainActivity.this);
-                startActivity(intent);
-            }
-        });
+            itemTouchHelper.attachToRecyclerView(recyclerViewNotes);
+
+            buttonAddNote.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = AddNoteActivity.newIntent(MainActivity.this);
+                    startActivity(intent);
+                }
+            });
+        } catch (Exception e) {
+            System.out.println("кот в мешке " + e.getClass() + e.getLocalizedMessage() + e.getCause());
+        }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        showNotes();
-    }
 
     private void initViews() {
         recyclerViewNotes = findViewById(R.id.recyclerViewNotes);
         buttonAddNote = findViewById(R.id.buttonAddNote);
+        mainViewModel = new MainViewModel(getApplication());
     }
 
-    private void showNotes() {
-            notesAdapter.setNotes(noteDataBase.notesDao().getNotes());
-    }
 }
 

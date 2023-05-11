@@ -6,7 +6,7 @@ import java.util.Random;
 public class Database {
     private ArrayList<Note> notes = new ArrayList<>();
 
-    private static Database instance = null;
+    /*private static Database instance = null;
 
     public static Database getInstance() {
         if(instance == null) {
@@ -38,5 +38,5 @@ public class Database {
 
     public ArrayList<Note> getNotes() {
         return new ArrayList<>(notes);
-    }
+    }*/
 }

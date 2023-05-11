@@ -5,10 +5,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
+
+import java.util.TreeMap;
 
 public class AddNoteActivity extends AppCompatActivity {
 
@@ -19,13 +23,13 @@ public class AddNoteActivity extends AppCompatActivity {
 
     private Button saveNoteButton;
 
-    private NoteDataBase noteDataBase;
+    private MainViewModel mainViewModel;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_make_note);
-        noteDataBase = NoteDataBase.getInstance(getApplication());
         initViews();
         saveNoteButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -42,13 +46,15 @@ public class AddNoteActivity extends AppCompatActivity {
         mediumButton = findViewById(R.id.radioButtonMedium);
 
         saveNoteButton = findViewById(R.id.saveNoteButton);
+
+        mainViewModel = new MainViewModel(getApplication());
     }
     private void saveNote() {
         String text = inputNameNote.getText().toString().trim();
         int priority = getPriority();
         Note note = new Note(0,text,priority);
-        noteDataBase.notesDao().add(note);
-        finish();
+        mainViewModel.add(note);
+
     }
 
     private int getPriority() {
